@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AgroPrevisao – sua safra de soja</title>
+  <style>
+    :root { --fundo:#f7f2e7; --card:#ffffff; --texto:#2b2b2b; --suave:#6b6b6b; --ouro:#c58b1a;
+            --verde:#2e7d32; --amarelo:#b38600; --vermelho:#c62828; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, "Segoe UI", Roboto, sans-serif; background:var(--fundo); color:var(--texto); }
+    header { background:#3b2e13; color:#fff; padding:22px 20px; }
+    header h1 { margin:0; font-size:1.6rem; }
+    header p { margin:4px 0 0 0; opacity:.85; }
+    main { max-width:960px; margin:0 auto; padding:20px 16px 40px; }
+    form { background:var(--card); border-radius:14px; padding:18px; display:grid; gap:14px;
+           grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); box-shadow:0 1px 4px rgba(0,0,0,.06); }
+    label { font-size:.9rem; color:var(--suave); display:grid; gap:6px; }
+    select, input { font-size:1rem; padding:10px; border:1px solid #d8cdb5; border-radius:8px; background:#fff; }
+    button { font-size:1rem; padding:11px 16px; border:0; border-radius:8px; background:var(--ouro);
+             color:#fff; font-weight:600; cursor:pointer; align-self:end; }
+    .grid { display:grid; gap:16px; margin-top:18px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .card { background:var(--card); border-radius:14px; padding:20px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+    .card h2 { font-size:1rem; color:var(--suave); margin:0 0 8px 0; font-weight:600; }
+    .numero { font-size:2.4rem; font-weight:800; margin:0; line-height:1.1; }
+    .sub { color:var(--suave); margin:6px 0 0 0; font-size:.95rem; }
+    .selo { display:inline-block; padding:6px 12px; border-radius:999px; font-weight:700; color:#fff; font-size:.9rem; }
+    .verde { background:var(--verde); } .amarelo { background:var(--amarelo); } .vermelho { background:var(--vermelho); }
+    .dica { border-left:4px solid var(--ouro); padding:10px 14px; background:#fbf6ea; border-radius:8px; margin-top:12px; }
+    .wide { grid-column: 1 / -1; }
+    .escala { display:flex; justify-content:space-between; font-size:.85rem; color:var(--suave); margin-top:8px; }
+    .faixa { height:10px; border-radius:6px; background:linear-gradient(90deg,#eadfc6,#c58b1a,#eadfc6); margin-top:10px; }
+    .mini { display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:12px; }
+    .mini div { background:#fbf6ea; border-radius:10px; padding:10px; text-align:center; }
+    .mini b { display:block; font-size:1.15rem; }
+    .mini span { font-size:.8rem; color:var(--suave); }
+    table { width:100%; border-collapse:collapse; margin-top:8px; font-size:.95rem; }
+    td, th { padding:8px 6px; border-bottom:1px solid #eee; text-align:left; }
+    tr.dest td { background:#fbf6ea; font-weight:700; }
+    .legenda { display:flex; gap:16px; font-size:.85rem; color:var(--suave); margin-top:6px; flex-wrap:wrap; }
+    .legenda i { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:6px; vertical-align:middle; }
+    svg { display:block; margin-top:8px; }
+    footer { color:var(--suave); font-size:.82rem; margin-top:22px; line-height:1.5; }
+    @media (max-width: 520px) { .numero { font-size:2rem; } .mini { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>AgroPrevisao</h1>
+    <p>Quanto a sua lavoura de soja deve render na próxima safra</p>
+  </header>
+
+  <main>
+    <form method="get" action="/">
+      <label>Seu município
+        <select name="cidade">
+          {% for m in municipios %}
+          <option value="{{ m }}" {% if m == cidade %}selected{% endif %}>{{ m }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Hectares de soja
+        <input type="number" name="hectares" min="1" step="1" value="{{ hectares|int }}">
+      </label>
+      <label>Preço esperado por saca (R$)
+        <input type="number" name="preco" min="10" step="5" value="{{ preco|int }}">
+      </label>
+      <button type="submit">Ver estimativa</button>
+    </form>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Safra {{ ano_prox }} · sua cidade</h2>
+        <p class="numero">{{ "%.0f"|format(previsto_sc) }} sc/ha</p>
+        <p class="sub">Sacas por hectare, estimadas</p>
+        <p class="sub">Pode variar entre <b>{{ "%.0f"|format(faixa_min) }}</b> e <b>{{ "%.0f"|format(faixa_max) }}</b> sacas/ha.</p>
+        <div class="faixa"></div>
+        <div class="escala"><span>{{ "%.0f"|format(faixa_min) }}</span><span>{{ "%.0f"|format(faixa_max) }}</span></div>
+      </section>
+
+      <section class="card">
+        <h2>Situação da safra</h2>
+        <span class="selo {{ cor }}">{{ situacao }}</span>
+        <div class="mini">
+          <div><b>{{ "%.0f"|format(media3_sc) }}</b><span>3 anos</span></div>
+          <div><b>{{ "%.0f"|format(media10_sc) }}</b><span>10 anos</span></div>
+          <div><b>{{ "%.0f"|format(ultima_sc) }}</b><span>safra {{ ultimo_ano }}</span></div>
+        </div>
+        <div class="dica">{{ dica }}</div>
+      </section>
+
+      <section class="card">
+        <h2>Na sua lavoura de {{ hectares|int }} ha</h2>
+        <p class="numero">{{ "{:,.0f}".format(total_sacas).replace(",", ".") }}</p>
+        <p class="sub">sacas estimadas no total</p>
+        <p class="sub">Valor estimado: <b>R$ {{ "{:,.0f}".format(receita).replace(",", ".") }}</b>
+          (a R$ {{ preco|int }} por saca)</p>
+        <p class="sub">Faixa de valor: R$ {{ "{:,.0f}".format(receita_min).replace(",", ".") }} a R$ {{ "{:,.0f}".format(receita_max).replace(",", ".") }}</p>
+      </section>
+
+      <section class="card">
+        <h2>E se o preço da saca mudar?</h2>
+        <table>
+          <tr><th>Preço por saca</th><th>Valor da safra</th></tr>
+          {% for c in cenarios %}
+          <tr class="{{ 'dest' if c.destaque else '' }}">
+            <td>R$ {{ c.preco }}</td>
+            <td>R$ {{ "{:,.0f}".format(c.valor).replace(",", ".") }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>Sua cidade no Paraná</h2>
+        <p class="numero">{{ posicao }}º <span style="font-size:1rem;color:var(--suave)">de {{ total_mun }} municípios</span></p>
+        <p class="sub">Na safra de {{ ultimo_ano }}, sua cidade ficou entre os <b>{{ 100 - percentil + 1 }}%</b> mais produtivos do estado.</p>
+      </section>
+
+      <section class="card">
+        <h2>Chuva na safra</h2>
+        <p class="sub" style="font-size:1rem;color:var(--texto)">{{ clima_txt }}</p>
+        <p class="sub">Última safra: <b>{{ "%.0f"|format(chuva_ult) }} mm</b> · média da cidade: <b>{{ "%.0f"|format(chuva_media) }} mm</b></p>
+        <div class="dica">Chuva fora do normal costuma pesar mais que a média. Acompanhe os alertas da sua região.</div>
+      </section>
+
+      <section class="card wide">
+        <h2>Safras da sua cidade (sacas por hectare, ano safra 2011 a 2025)</h2>
+        {{ graf_safras|safe }}
+        <div class="legenda">
+          <span><i style="background:#d9c9a3"></i>Safras colhidas</span>
+          <span><i style="background:#c58b1a"></i>Estimativa {{ ano_prox }}</span>
+        </div>
+      </section>
+
+      <section class="card wide">
+        <h2>Sua cidade x média do Paraná (últimos 12 anos)</h2>
+        {{ graf_comparacao|safe }}
+        <div class="legenda">
+          <span><i style="background:#c58b1a"></i>Sua cidade</span>
+          <span><i style="background:#3b2e13"></i>Média do Paraná</span>
+        </div>
+        <p class="sub">Eixo: sacas por hectare. Quando a linha da cidade fica acima da média do estado, a lavoura está rendendo mais que a média paranaense.</p>
+      </section>
+
+      <section class="card wide">
+        <h2>Chuva da safra: sua cidade x média do Paraná</h2>
+        {{ graf_chuva|safe }}
+        <div class="legenda">
+          <span><i style="background:#2f6f9f"></i>Sua cidade</span>
+          <span><i style="background:#999999"></i>Média do Paraná</span>
+        </div>
+        <p class="sub">Eixo: milímetros de chuva na safra (outubro a abril). Anos com pouca chuva (vales da linha) costumam ser os de menor produtividade. Eles ajudam a entender o risco.</p>
+      </section>
+    </div>
+
+    <footer>
+      A estimativa é um apoio ao planejamento. Ela não garante a safra. Em média, erra cerca de {{ "%.0f"|format(9.5) }} sacas por hectare,
+      e nos anos de seca o erro costuma ser maior. Use junto com a orientação da sua cooperativa ou da extensão rural.
+      Fontes: IBGE (produção municipal) e INMET (estações meteorológicas). O valor por saca é o que você informa; não é previsão de preço.
+    </footer>
+  </main>
+</body>
+</html>
