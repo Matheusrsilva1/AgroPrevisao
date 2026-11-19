@@ -28,7 +28,7 @@ import os
 import re
 from collections import defaultdict
 
-BASE = r"C:\Users\mathe\Enxame\global-solution-produtor-rural"
+BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # raiz do repositório
 DATA = os.path.join(BASE, "data")
 PAM = os.path.join(DATA, "pam_soja_pr.csv")
 MALHA = os.path.join(DATA, "malha_pr.json")

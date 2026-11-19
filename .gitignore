@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+ml/AgroPrevisao_Offline.html
+ml/figuras_modelos.png
+.ipynb_checkpoints/

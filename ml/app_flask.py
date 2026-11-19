@@ -16,7 +16,11 @@ from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-CAMINHO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "dataset_soja_pr.csv")
+_AQUI = os.path.dirname(os.path.abspath(__file__))
+# procura o dataset na mesma pasta (entrega) ou em ../data (projeto original)
+CAMINHO = next((c for c in (os.path.join(_AQUI, "dataset_soja_pr.csv"),
+                            os.path.join(_AQUI, "..", "data", "dataset_soja_pr.csv"))
+                if os.path.exists(c)), os.path.join(_AQUI, "dataset_soja_pr.csv"))
 FEATURES = ["rend_media3", "rend_ultimo", "area_anterior",
             "precip_safra_mm", "temp_media_safra_c", "tendencia_ano"]
 ALVO = "rendimento_kg_ha"
